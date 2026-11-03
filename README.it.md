@@ -30,10 +30,10 @@ Tutto gira in locale: la mod parla con `clm-serve` su `127.0.0.1`, che calcola g
 
 | | |
 |---|---|
-| 🧠 **Due tool per Claude** | `rank` ordina candidati (piani, patch, comandi, file da leggere per primi) rispetto a un contesto; `ask` risponde a domande tipizzate su uno stato: sì/no, una tra più opzioni, o un punteggio su una scala. Entrambi restituiscono la distribuzione completa e la latenza. |
+| 🧠 **Due tool per Claude** | `rank` ordina candidati (piani, patch, comandi, file da leggere per primi) rispetto a un contesto, ognuno scritto come frase completa (le parole isolate si classificano male); `ask` risponde a domande tipizzate su uno stato: sì/no, una tra più opzioni, o un punteggio su una scala. Entrambi restituiscono la distribuzione completa e la latenza. |
 | 🛡️ **Guard** | Quando un comando Bash sta per chiederti il permesso, CLM stima se è *sicuro*, *distruttivo* o di *esfiltrazione*. La stima compare sotto il permesso, e sopra la soglia arriva un toast. Solo consultivo: non cambia mai la decisione. |
 | 🔍 **Check** | Dopo un comando Bash che il tool *non* ha segnalato come fallito, un output che sembra un fallimento (test falliti, stack trace, `npm ERR!`) fa arrivare a Claude una breve nota nascosta per rileggerlo. Le letture semplici (`cat`, `grep`, `git log`…) non vengono mai controllate. |
-| 📊 **Registro dal vivo** | Due righe per risposta: quando, da dove, su cosa e quanto ci ha messo, poi il numero che conta come indicatore colorato (rischio, fallimento, candidato migliore) con la scelta di CLM. **▸** apre la distribuzione completa. p50/p95, una sparkline delle latenze (un grafico su desktop), filtri per sorgente; quando CLM è spento o offline, la soluzione è a un clic. |
+| 📊 **Registro dal vivo** | Due righe per risposta: quando, da dove, su cosa e quanto ci ha messo, poi il numero che conta come indicatore colorato (rischio, fallimento, candidato migliore) con la scelta di CLM. **▸** apre il comando (o la domanda) per intero e la distribuzione completa. p50/p95, una sparkline delle latenze (un grafico su desktop), filtri per sorgente; quando CLM è spento o offline, la soluzione è a un clic. |
 | 🟢 **Tag nel footer e menu** | Un pallino accanto al nome del modello (grigio spento, giallo in verifica, verde pronto, rosso offline): clic per accendere o spegnere, clic destro per il menu. Una band sopra il prompt mostra l'ultima risposta. |
 | ⚙️ **Gestione servizi** | Avvia, ferma e ispeziona `llama-server` (l'encoder) e `clm-serve` su questa macchina, trovandoli in LM Studio, nel `PATH` o in pipx. Windows, macOS e Linux. |
 | 🧯 **Fatta per non intralciare** | Spenta di default e a costo zero da spenta (i tool sono nascosti al modello). Timeout brevi e un circuit breaker: un encoder lento costa un timeout per pausa, mai uno per comando. |
@@ -136,7 +136,7 @@ loro parte da soli. Clic destro sul tag **CLM-8B** nel footer per il menu, in qu
 | `/clm pulisci` · `clear` | Svuota il registro |
 | `/clm riavvia` · `ferma` · `servizi` | Gestisce `llama-server` e `clm-serve` su questa macchina |
 | `/clm guard on\|off\|<1-99>` | La stima del rischio, o la soglia del toast in % (predefinita 70) |
-| `/clm check on\|off\|<1-99>` | Il controllo dei fallimenti silenziosi, o la sua soglia in % (predefinita 80) |
+| `/clm check on\|off\|<1-99>` | Il controllo dei fallimenti silenziosi, o la sua soglia in % (predefinita 70) |
 | `/clm band on\|off` | L'ultima risposta sopra il prompt |
 | `/clm modello <nome>\|default` | La head CLM con cui risponde `clm-serve` (ad es. una fine-tuned) |
 | `/clm url <url>` | Dove ascolta `clm-serve` (predefinito `http://127.0.0.1:8700`) |

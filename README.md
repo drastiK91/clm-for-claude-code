@@ -45,10 +45,10 @@ Everything runs locally: the mod talks to `clm-serve` on `127.0.0.1`, which embe
 
 | | |
 |---|---|
-| 🧠 **Two tools for Claude** | `rank` orders candidates (plans, patches, commands, files to read first) against a context; `ask` answers typed questions about a state: yes/no, one of several options, or a score on a scale. Both answer with full probability distributions and their latency. |
+| 🧠 **Two tools for Claude** | `rank` orders candidates (plans, patches, commands, files to read first) against a context, each written as a full sentence (bare words rank poorly); `ask` answers typed questions about a state: yes/no, one of several options, or a score on a scale. Both answer with full probability distributions and their latency. |
 | 🛡️ **Guard** | When a Bash command is about to ask for your permission, CLM estimates whether it is *safe*, *destructive* or *exfiltration*. The estimate appears under the prompt, a toast fires above your threshold. Advisory only: it never changes the decision. |
 | 🔍 **Check** | After a Bash command that the tool did *not* report as failed, an output that reads like a failure (failed tests, stack traces, `npm ERR!`) earns Claude a short, hidden note to re-read it. Plain reads (`cat`, `grep`, `git log`…) are never checked. |
-| 📊 **Live log** | Two lines per answer: when, where from, what about and how long, then the one number it is about as a colored meter (risk, failure, best candidate) with CLM's pick. **▸** opens the full distribution. p50/p95, a latency sparkline (a chart on desktop), filters per source; when CLM is off or offline, the fix is one click away. |
+| 📊 **Live log** | Two lines per answer: when, where from, what about and how long, then the one number it is about as a colored meter (risk, failure, best candidate) with CLM's pick. **▸** opens the whole command (or question) and the full distribution. p50/p95, a latency sparkline (a chart on desktop), filters per source; when CLM is off or offline, the fix is one click away. |
 | 🟢 **Footer tag and menu** | A dot beside the model name (grey off, yellow checking, green ready, red offline): click to switch CLM on or off, right-click for the menu. A band above the prompt shows the last answer. |
 | ⚙️ **Service manager** | Starts, stops and inspects `llama-server` (the encoder) and `clm-serve` on this machine, finding them in LM Studio, on `PATH` or in pipx. Windows, macOS and Linux. |
 | 🧯 **Built to stay out of the way** | Off by default and zero cost when off (the tools are hidden from the model). Short time limits and a circuit breaker: a slow encoder costs one timeout per pause, never one per command. |
@@ -151,7 +151,7 @@ Right-click the **CLM-8B** tag in the footer at any time for the menu.
 | `/clm clear` | Empty the log |
 | `/clm restart` · `stop` · `services` | Manage `llama-server` and `clm-serve` on this machine |
 | `/clm guard on\|off\|<1-99>` | The risk hint, or its toast threshold in % (default 70) |
-| `/clm check on\|off\|<1-99>` | The silent-failure check, or its threshold in % (default 80) |
+| `/clm check on\|off\|<1-99>` | The silent-failure check, or its threshold in % (default 70) |
 | `/clm band on\|off` | The last answer above the prompt |
 | `/clm model <name>\|default` | The CLM head `clm-serve` answers with (e.g. a fine-tuned one) |
 | `/clm url <url>` | Where `clm-serve` listens (default `http://127.0.0.1:8700`) |
@@ -222,7 +222,7 @@ hooks/
   draw.ts             pure: bars, sparkline, percentiles, latency chart
   i18n.ts             what the mod says, in English and Italian
   tag.tsx             the footer tag's surface module (left/right click)
-  clm.test.tsx        36 tests against the engine's test kit
+  clm.test.tsx        40 tests against the engine's test kit
 types/index.d.ts      the state contract
 ```
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.1 — 2026-11-03
+
+### Added
+
+- **The whole command in the log.** A row's line still cuts a long or multi-line command; **▸** now opens it in full
+  (its first 2000 characters, wrapped, in monospace) above the distribution. Calls CLM did not answer open on it too.
+
+### Fixed
+
+- **The check fires again.** It asked CLM a success/failure choice, whose failure probability stayed at 3–27% on real
+  failures with the llama.cpp encoder: under the 80% threshold, so no note was ever sent. It now asks a yes/no question
+  ("does this output show that the command failed…?"). On 14 outputs that all hold an error word, it caught 6 of 8 real
+  failures at the new 70% default, with no note on the 6 successes (`Found 0 errors`, `tests/test_failures.py` passing…).
+  The log still shows failure and success.
+- **A check threshold saved by 0.2.0 is reset to 70% once**, since the number now means something different. Set your own
+  again with `/clm check <1-99>`: it stays.
+- **`rank` asks for full sentences.** One-word candidates ranked poorly ("Rome" as the capital of France); written as
+  sentences, the same cases rank right. The tool's description now tells Claude so.
+
 ## 0.2.0 — 2026-11-03
 
 First public release.

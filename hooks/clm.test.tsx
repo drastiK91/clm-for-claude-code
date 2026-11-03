@@ -104,9 +104,7 @@ function fakeServer(
 
     if ('outcome' in questions) {
       return json({
-        answers: {
-          outcome: { type: 'choice', choice: 'failure', confidence: 0.9, probabilities: { success: 1 - failure, failure } },
-        },
+        answers: { outcome: { type: 'noul', noul: failure } },
         usage: { input_tokens: 40 },
       })
     }
@@ -617,6 +615,75 @@ describe('clm', () => {
     expect(await ui.find({ type: 'Text', text: 'note sent to the model' })).toBeDefined()
     // The headline is the failure's probability, in the color of a value over its threshold.
     expect((await ui.find({ type: 'Text', text: /^ ?95\.0%$/ }))?.props.color).toBe('error')
+    await ui.unmount()
+  })
+
+  test('the check asks a yes/no question, logged as failure and success', async ($, on) => {
+    const hits = fakeServer(on, { failure: 0.6 })
+    fakeBash(on, FAILED_TESTS)
+    await $.command.run({ command: 'clm', args: 'on', ...RUN })
+
+    const ran = await callTool($, { tool: 'Bash', command: 'npm test', description: 'Run tests' })
+
+    expect((hits.requests[0]?.body.questions as Record<string, { type?: string }>).outcome?.type).toBe('noul')
+    // 60% is under the 70% default: no note, a warning color, and CLM's lean beside the meter.
+    expect(ran.context ?? []).toEqual([])
+
+    const ui = await $.ui.mount({ plugin: 'clm', surface: 'desktop', ...PANE })
+
+    expect((await ui.find({ type: 'Text', text: /^\s*60\.0%$/ }))?.props.color).toBe('warning')
+    expect(await ui.find({ type: 'Text', text: ' · failure' })).toBeDefined()
+
+    const row = await ui.find({ type: 'Button', text: /CHECK/ })
+
+    await ui.press({ key: row?.key ?? '' })
+    expect(await ui.find({ type: 'Text', text: /^failure$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^success$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^yes$/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test("a check threshold stored by 0.2.0 moves once to the new scale's default; one set after it stays", async ($, on) => {
+    const settings = { enabled: false, guard: true, check: true, band: true, url: 'http://127.0.0.1:8700', lang: 'en', checkThreshold: 0.85 }
+    fakeServer(on, { store: { settings } })
+    await startSession($, on)
+
+    expect((await $.command.run({ command: 'clm', args: 'status', ...RUN })).text).toContain('notes from 70.0%')
+    await $.command.run({ command: 'clm', args: 'check 85', ...RUN })
+    // The next session, or a reload: the marker is there, so the chosen threshold stays.
+    await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true } as never)
+    expect((await $.command.run({ command: 'clm', args: 'status', ...RUN })).text).toContain('notes from 85.0%')
+  })
+
+  test('an opened row shows the whole command, even when CLM did not answer', async ($, on) => {
+    const command = `cat <<'EOF' > deploy.sh\n${'echo "step"\n'.repeat(30)}EOF\nrm -rf build && ./deploy.sh --prod`
+    fakeServer(on, { decision: 'ask' })
+    await $.command.run({ command: 'clm', args: 'on', ...RUN })
+    await $.tool.check({ tool: 'Bash', input: { command }, tool_use_id: 'toolu_1' })
+
+    for (const surface of SURFACES) {
+      const ui = await $.ui.mount({ plugin: 'clm', surface, ...PANE })
+
+      // The row's line is cut; the command's end waits behind ▸.
+      expect(await ui.find({ type: 'Text', text: /^\$ cat <<'EOF' > deploy\.sh echo "step"/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /deploy\.sh --prod$/ })).toBeUndefined()
+      await ui.press({ key: (await ui.find({ type: 'Button', text: /GUARD/ }))?.key ?? '' })
+      expect((await ui.find({ type: 'Text', text: /deploy\.sh --prod$/ }))?.text).toBe(`$ ${command}`)
+      await ui.press({ key: (await ui.find({ type: 'Button', text: /GUARD/ }))?.key ?? '' })
+      await ui.unmount()
+    }
+  })
+
+  test('a failed call opens on the whole command too', async ($, on) => {
+    fakeServer(on, { isSystemOneDown: true })
+    fakeBash(on, FAILED_TESTS)
+    await $.command.run({ command: 'clm', args: 'on', ...RUN })
+    await callTool($, { tool: 'Bash', command: `npm test -- ${'--testPathPattern=src/very/long/path '.repeat(6)}--ci`, description: 'Run tests' })
+
+    const ui = await $.ui.mount({ plugin: 'clm', surface: 'desktop', ...PANE })
+
+    await ui.press({ key: (await ui.find({ type: 'Button', text: /CHECK/ }))?.key ?? '' })
+    expect(await ui.find({ type: 'Text', text: /^\$ npm test -- .*--ci$/ })).toBeDefined()
     await ui.unmount()
   })
 

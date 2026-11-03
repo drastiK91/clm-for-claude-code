@@ -40,6 +40,8 @@ export type ClmCall = {
   kind: 'rank' | 'systemone'
   /** What was asked, on one short line. */
   subject: string
+  /** What was asked in full (its first 2000 characters) when the subject cut or flattened it: shown when the row is opened. */
+  text?: string
   /** The answer, on one short line. */
   answer: string
   /** The distribution behind the answer as text, one line per option. */

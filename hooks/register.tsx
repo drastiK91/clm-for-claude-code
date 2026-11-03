@@ -38,7 +38,7 @@ const DEFAULTS: ClmSettings = {
   band: true,
   url: DEFAULT_URL,
   guardThreshold: 0.7,
-  checkThreshold: 0.8,
+  checkThreshold: 0.7,
   timeoutMs: 5000,
   model: null,
   encoderModel: null,
@@ -66,6 +66,9 @@ const CLIENT_GRACE_MS = 4000
 const RANK_TOOL = 'mcp__clm__rank'
 const ASK_TOOL = 'mcp__clm__ask'
 const MAX_LOG = 50
+// A logged call's line, and how much of what was asked its opened row keeps (50 calls stay light).
+const SUBJECT_CHARS = 160
+const FULL_TEXT_CHARS = 2000
 // llama-server refuses an input longer than its context (-c 2048) instead of truncating it. Prose
 // runs near 3-4 chars per token, but digits, hashes and base64 reach about 1 token per char: these
 // caps keep ordinary text under the limit, and a refused input is retried once with a cut sized
@@ -77,6 +80,10 @@ const TOKEN_BUDGET = 1800
 // What the check sends after a Bash command: the command's head, then its output's tail, about 400
 // tokens of prose, so a check stays quick and fits a slot even with -np 2 on a 2048-token context.
 const CHECK_STATE_CHARS = 1500
+// The check's scale, kept in $.store beside the settings. Up to 0.2.0 the check asked a two-option
+// choice, whose failure probability ran far lower than the yes/no question's: a threshold stored
+// before this marker is reset once to the default.
+const CHECK_SCALE = 2
 // The hooks wait on CLM inside the agent's own work, so they get short limits; the model's own
 // rank/ask calls get a longer one, since the model is explicitly waiting for the answer.
 const GUARD_TIMEOUT_MS = 1500
@@ -101,6 +108,8 @@ const RANK_DESCRIPTION = [
   'Use it to pick the best of several candidates you wrote yourself (plans, patches, shell commands, answers, file paths to inspect first),',
   'to shortlist a large set before reading in depth, or as a quick second opinion between close alternatives.',
   'Returns each candidate, by its number in your list, with its probability of being the best match, and the latency.',
+  'Write each candidate as a full sentence that says what it is or does ("rm -rf build/ removes only the build folder", not "rm -rf build/"):',
+  'bare words and one-word answers rank poorly.',
   LIMITS,
   'It only compares the texts you give it and knows nothing else: treat the ranking as a signal, not as ground truth.',
 ].join(' ')
@@ -303,11 +312,15 @@ async function post<T>($: Engine, s: ClmSettings, path: string, payload: Record<
   return { body: JSON.parse(res.text) as T, clientMs, serverMs: Number.isFinite(server) ? server : null }
 }
 
-async function record($: Engine, call: Omit<ClmCall, 'id' | 'at'>): Promise<ClmCall> {
+/** Logs a call. Its subject is what was asked in full: the row shows one line of it, the opened row all of it. */
+async function record($: Engine, call: Omit<ClmCall, 'id' | 'at' | 'text'>): Promise<ClmCall> {
   sequence += 1
   const at = await $.clock.now()
+  const asked = call.subject.trim()
+  const subject = oneLine(asked, SUBJECT_CHARS)
+  const text = subject === asked ? {} : { text: head(asked, FULL_TEXT_CHARS) }
   // The time keeps ids apart across reloads, which start the sequence over while the log stays.
-  const full: ClmCall = { ...call, id: `${at}-${sequence}`, at }
+  const full: ClmCall = { ...call, subject, ...text, id: `${at}-${sequence}`, at }
   await update($, calls, list => [full, ...list].slice(0, MAX_LOG))
   await syncStatus($)
 
@@ -413,7 +426,7 @@ async function rank(
   const call = await record($, {
     source,
     kind: 'rank',
-    subject: oneLine(question === '' ? context : `${question} — ${context}`, 160),
+    subject: question === '' ? context : `${question} — ${context}`,
     // The probability is the headline's, drawn beside it as a bar.
     answer: best ? `#${best.index + 1} «${oneLine(best.candidate, 60)}»` : tr.noCandidate,
     detail: ranked.slice(0, 8).map(r => `${pct(r.prob).padStart(6)}  #${r.index + 1} ${oneLine(r.candidate, 90)}`),
@@ -429,10 +442,15 @@ async function rank(
   return { ranked, call, notes }
 }
 
-function describeAnswer(id: string, a: Answer, isOnly: boolean, tr: Strings): string {
+/** A yes/no answer's two sides, as terms the drawing translates: failure and success instead of yes and no. */
+type NoulTerms = readonly [yes: string, no: string]
+
+const YES_NO: NoulTerms = ['yes', 'no']
+
+function describeAnswer(id: string, a: Answer, isOnly: boolean, tr: Strings, [yes]: NoulTerms = YES_NO): string {
   const named = (text: string) => (isOnly ? text : `${id}: ${text}`)
 
-  if (a.type === 'noul') return named(`${pct(a.noul ?? 0)} ${tr.yes}`)
+  if (a.type === 'noul') return named(`${pct(a.noul ?? 0)} ${tr.term[yes] ?? yes}`)
   if (a.type === 'choice') return named(`${a.choice} ${pct(a.probabilities?.[a.choice ?? ''] ?? 0)}`)
 
   const levels = Object.keys(a.probabilities ?? {}).length
@@ -440,8 +458,8 @@ function describeAnswer(id: string, a: Answer, isOnly: boolean, tr: Strings): st
   return named(tr.outOf((a.score ?? 0).toFixed(2), Math.max(0, levels - 1)))
 }
 
-function answerDetail(id: string, a: Answer, tr: Strings): string[] {
-  if (a.type === 'noul') return [`${id}  ${tr.yes} ${pct(a.noul ?? 0)} · ${tr.no} ${pct(1 - (a.noul ?? 0))}`]
+function answerDetail(id: string, a: Answer, tr: Strings, [yes, no]: NoulTerms = YES_NO): string[] {
+  if (a.type === 'noul') return [`${id}  ${tr.term[yes] ?? yes} ${pct(a.noul ?? 0)} · ${tr.term[no] ?? no} ${pct(1 - (a.noul ?? 0))}`]
 
   return Object.entries(a.probabilities ?? {}).map(([option, p]) => {
     const label = a.legend?.[option] ?? option
@@ -451,11 +469,11 @@ function answerDetail(id: string, a: Answer, tr: Strings): string[] {
 }
 
 /** An answer's options for the bars: a choice best first, a score's levels in their order. */
-function answerDist(id: string, a: Answer, isOnly: boolean, tr: Strings): ClmOption[] {
+function answerDist(id: string, a: Answer, isOnly: boolean, [yes, no]: NoulTerms = YES_NO): ClmOption[] {
   const group = isOnly ? {} : { group: id }
 
   // Terms, not words: the drawing translates them, so a later change of language reaches old calls too.
-  if (a.type === 'noul') return [{ label: 'yes', p: a.noul ?? 0, ...group }, { label: 'no', p: 1 - (a.noul ?? 0), ...group }]
+  if (a.type === 'noul') return [{ label: yes, p: a.noul ?? 0, ...group }, { label: no, p: 1 - (a.noul ?? 0), ...group }]
 
   const options = Object.entries(a.probabilities ?? {}).map(([option, p]) => ({
     label: a.type === 'score' ? oneLine(a.legend?.[option] ?? option, 24) : option,
@@ -472,10 +490,12 @@ type AskOptions = {
   /** The log's line for the call; the state's start when absent. */
   subject?: string
   headline?: (answers: Record<string, Answer>) => ClmHeadline | undefined
+  /** How the log names a yes/no answer's sides; yes and no when absent. */
+  noulTerms?: NoulTerms
 }
 
 async function ask($: Engine, s: ClmSettings, source: ClmSource, state: string, questions: Record<string, unknown>, options: AskOptions = {}) {
-  const { timeoutMs = s.timeoutMs, subject, headline } = options
+  const { timeoutMs = s.timeoutMs, subject, headline, noulTerms } = options
   const {
     value: { body, clientMs, serverMs },
     isCut,
@@ -489,10 +509,10 @@ async function ask($: Engine, s: ClmSettings, source: ClmSource, state: string, 
   const call = await record($, {
     source,
     kind: 'systemone',
-    subject: oneLine(subject ?? state, 160),
-    answer: entries.map(([id, a]) => describeAnswer(id, a, isOnly, tr)).join(' · '),
-    detail: entries.flatMap(([id, a]) => answerDetail(id, a, tr)),
-    dist: entries.flatMap(([id, a]) => answerDist(id, a, isOnly, tr)),
+    subject: subject ?? state,
+    answer: entries.map(([id, a]) => describeAnswer(id, a, isOnly, tr, noulTerms)).join(' · '),
+    detail: entries.flatMap(([id, a]) => answerDetail(id, a, tr, noulTerms)),
+    dist: entries.flatMap(([id, a]) => answerDist(id, a, isOnly, noulTerms)),
     ...(top === undefined ? {} : { headline: top }),
     clientMs,
     serverMs,
@@ -965,6 +985,7 @@ export const register: Register = on => {
     const stored = (await $.store.get('settings')) as Partial<ClmSettings> | undefined
     // CLM's own client reads CLM_BASE_URL: it stands in for the default URL, never for one set with /clm url.
     const envUrl = await $.env.get('CLM_BASE_URL').catch(() => undefined)
+    const isOldScale = stored !== undefined && (await $.store.get('checkScale')) !== CHECK_SCALE
     const s = await update($, settings, () => {
       const stand = { ...DEFAULTS, ...(stored ?? {}) }
       const merged = envUrl !== undefined && /^https?:\/\//i.test(envUrl) && stand.url === DEFAULT_URL ? { ...stand, url: envUrl } : stand
@@ -973,11 +994,13 @@ export const register: Register = on => {
       // Settings stored before the mod spoke English came from its Italian-only version.
       const chosen: unknown = stored !== undefined && stored.lang === undefined ? 'it' : merged.lang
       const resolved: ClmSettings['lang'] = chosen === 'en' || chosen === 'it' ? chosen : 'auto'
+      const checkThreshold = isOldScale ? DEFAULTS.checkThreshold : merged.checkThreshold
 
-      return { ...merged, encoderArgs, lang: resolved }
+      return { ...merged, encoderArgs, lang: resolved, checkThreshold }
     })
 
-    if (stored !== undefined && stored.lang === undefined) await $.store.set('settings', s)
+    if (stored !== undefined && (stored.lang === undefined || isOldScale)) await $.store.set('settings', s)
+    if ((await $.store.get('checkScale')) !== CHECK_SCALE) await $.store.set('checkScale', CHECK_SCALE)
 
     loadEpoch = await $.clock.now()
 
@@ -1005,7 +1028,7 @@ export const register: Register = on => {
             items: { type: 'string' },
             minItems: 2,
             maxItems: 64,
-            description: 'The options to rank, each a self-contained text.',
+            description: 'The options to rank, each a self-contained full sentence.',
           },
           question: { type: 'string', description: 'Optional: what "best" means, appended to the context.' },
         },
@@ -1084,7 +1107,7 @@ export const register: Register = on => {
 
       return { result: `CLM-8B ranking (${ms(call)}), best first; #n is the candidate's number in your list:\n${lines.join('\n')}${cut}` }
     } catch (error) {
-      await failed($, 'tool', 'rank', oneLine(input.context, 120), error)
+      await failed($, 'tool', 'rank', input.context, error)
 
       // The model is told in English, whatever language the person reads the log in.
       return { deny: `CLM-8B did not answer: ${describeError(error, STRINGS.en)}. Carry on without it.` }
@@ -1109,7 +1132,7 @@ export const register: Register = on => {
 
       return { result: `CLM-8B answers (${ms(call)}):\n${JSON.stringify(answers, null, 2)}${cut}` }
     } catch (error) {
-      await failed($, 'tool', 'systemone', oneLine(input.state, 120), error)
+      await failed($, 'tool', 'systemone', input.state, error)
 
       return { deny: `CLM-8B did not answer: ${describeError(error, STRINGS.en)}. Carry on without it.` }
     }
@@ -1137,7 +1160,7 @@ export const register: Register = on => {
     // The command alone, never the agent's own description of it, which could talk the score down;
     // both ends of a long one, where a destructive verb and its target sit.
     const shown = command.length > 1500 ? `${command.slice(0, 1000)}\n…\n${command.slice(-450)}` : command
-    const answered = await throughBreaker($, 'guard', oneLine(command, 120), () =>
+    const answered = await throughBreaker($, 'guard', `$ ${command}`, () =>
       ask(
         $,
         s,
@@ -1223,36 +1246,35 @@ export const register: Register = on => {
       // Failure summaries come at the end of an output: its tail, after the command's head, the two
       // within CHECK_STATE_CHARS (tail adds one "…").
       const shownCommand = `$ ${head(command, 200)}`
-      const answered = await throughBreaker($, 'check', oneLine(command, 120), () =>
+      const answered = await throughBreaker($, 'check', `$ ${command}`, () =>
         ask(
           $,
           s,
           'check',
           `${shownCommand}\n${tail(output, CHECK_STATE_CHARS - shownCommand.length - 2)}`,
           {
+            // A yes/no question: on outputs that all hold an error word, a success/failure choice put real
+            // failures at 3-27% (under any useful threshold), this one at 51-89% and successes at 27-61%.
             outcome: {
-              type: 'choice',
-              instructions: 'Did this shell command succeed?',
-              criteria: {
-                success: 'The command succeeded: normal output, tests passed, the build completed',
-                failure: 'The command failed: errors, exceptions, stack traces, failing tests, or a build that did not succeed',
-              },
+              type: 'noul',
+              instructions: 'Does this output show that the command failed (an error, a failing test, a crash, or a build that did not finish)?',
             },
           },
           {
             timeoutMs: Math.min(s.timeoutMs, CHECK_TIMEOUT_MS),
             subject: `$ ${command}`,
+            noulTerms: ['failure', 'success'],
             headline: answers => {
-              const p = answers.outcome?.probabilities?.failure
+              const p = answers.outcome?.noul
 
               return typeof p === 'number'
-                ? { label: 'failure', p, tone: toneOf(p, s.checkThreshold), verdict: answers.outcome?.choice ?? '' }
+                ? { label: 'failure', p, tone: toneOf(p, s.checkThreshold), verdict: p >= 0.5 ? 'failure' : 'success' }
                 : undefined
             },
           },
         ),
       )
-      const failure = answered?.answers.outcome?.probabilities?.failure
+      const failure = answered?.answers.outcome?.noul
 
       if (answered === undefined || typeof failure !== 'number' || failure < s.checkThreshold) return ran
 
@@ -1826,8 +1848,10 @@ export const register: Register = on => {
     for (const call of list) {
       if (used >= room) break
 
-      const hasDetail = call.ok && (call.dist?.length ?? 0) > 0
+      // A row opens on its distribution, and on what was asked when its line could not hold it all.
+      const hasDetail = (call.ok && (call.dist?.length ?? 0) > 0) || call.text !== undefined
       const isOpen = hasDetail && call.id === open
+      let wrapped = 0
       const top = call.ok ? call.headline : undefined
       const verdict = top === undefined ? '' : verdictOf(top, tr)
       const lines: JSX.Element[] = [
@@ -1886,6 +1910,19 @@ export const register: Register = on => {
         </Box>,
       ]
 
+      if (isOpen && call.text !== undefined) {
+        lines.push(
+          <Box paddingLeft={INDENT} paddingRight={1}>
+            <Text size="footnote" mono wrap="wrap">
+              {call.text}
+            </Text>
+          </Box>,
+        )
+        // Its wrapped lines are rows too, which the room counts.
+        const perRow = Math.max(20, width - INDENT - 1)
+        wrapped = call.text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / perRow)), 0) - 1
+      }
+
       if (isOpen) {
         // The whole distribution, one meter per option, the likeliest of each question in the accent.
         const options = (call.dist ?? []).slice(0, 8)
@@ -1924,7 +1961,7 @@ export const register: Register = on => {
         }
       }
 
-      used += lines.length
+      used += lines.length + wrapped
       rows.push(<Box flexDirection="column">{lines}</Box>)
     }
 
