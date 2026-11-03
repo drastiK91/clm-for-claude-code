@@ -1848,8 +1848,11 @@ export const register: Register = on => {
     for (const call of list) {
       if (used >= room) break
 
+      // What was asked, whole, when the row's line cannot show it: cut when logged (text), or by the pane's
+      // width, which leaves the subject what the chevron and time, the badge and the latency do not take.
+      const asked = call.text ?? (call.subject.length > width - INDENT - 14 ? call.subject : undefined)
       // A row opens on its distribution, and on what was asked when its line could not hold it all.
-      const hasDetail = (call.ok && (call.dist?.length ?? 0) > 0) || call.text !== undefined
+      const hasDetail = (call.ok && (call.dist?.length ?? 0) > 0) || asked !== undefined
       const isOpen = hasDetail && call.id === open
       let wrapped = 0
       const top = call.ok ? call.headline : undefined
@@ -1910,17 +1913,17 @@ export const register: Register = on => {
         </Box>,
       ]
 
-      if (isOpen && call.text !== undefined) {
+      if (isOpen && asked !== undefined) {
         lines.push(
           <Box paddingLeft={INDENT} paddingRight={1}>
             <Text size="footnote" mono wrap="wrap">
-              {call.text}
+              {asked}
             </Text>
           </Box>,
         )
         // Its wrapped lines are rows too, which the room counts.
         const perRow = Math.max(20, width - INDENT - 1)
-        wrapped = call.text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / perRow)), 0) - 1
+        wrapped = asked.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / perRow)), 0) - 1
       }
 
       if (isOpen) {

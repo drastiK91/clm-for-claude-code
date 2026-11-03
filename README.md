@@ -222,7 +222,7 @@ hooks/
   draw.ts             pure: bars, sparkline, percentiles, latency chart
   i18n.ts             what the mod says, in English and Italian
   tag.tsx             the footer tag's surface module (left/right click)
-  clm.test.tsx        40 tests against the engine's test kit
+  clm.test.tsx        41 tests against the engine's test kit
 types/index.d.ts      the state contract
 ```
 

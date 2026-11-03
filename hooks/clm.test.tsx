@@ -674,6 +674,27 @@ describe('clm', () => {
     }
   })
 
+  test('a narrow pane opens on a command its line cuts, short as it is; a wide one does not repeat it', async ($, on) => {
+    const command = 'docker compose -f docker-compose.prod.yml up -d --build --remove-orphans api'
+    fakeServer(on, { decision: 'ask' })
+    await $.command.run({ command: 'clm', args: 'on', ...RUN })
+    await $.tool.check({ tool: 'Bash', input: { command }, tool_use_id: 'toolu_1' })
+
+    for (const [bodyColumns, shown] of [[60, 2], [120, 1]] as const) {
+      for (const surface of SURFACES) {
+        const ui = await $.ui.mount({ plugin: 'clm', surface, ...PANE, props: { ...PANE.props, bodyColumns } })
+        const whole = async () => (await ui.findAll({ type: 'Text', text: command })).filter(t => t.text === `$ ${command}`)
+
+        expect(await whole()).toHaveLength(1)
+        await ui.press({ key: (await ui.find({ type: 'Button', text: /GUARD/ }))?.key ?? '' })
+        // The row's own line, and under it the command whole where the line cannot show it.
+        expect(await whole()).toHaveLength(shown)
+        await ui.press({ key: (await ui.find({ type: 'Button', text: /GUARD/ }))?.key ?? '' })
+        await ui.unmount()
+      }
+    }
+  })
+
   test('a failed call opens on the whole command too', async ($, on) => {
     fakeServer(on, { isSystemOneDown: true })
     fakeBash(on, FAILED_TESTS)

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 — 2026-11-03
+
+### Fixed
+
+- **▸ opens on every command the pane cuts.** 0.2.1 kept the whole text only past 160 characters, but a docked pane cuts
+  a row's line far sooner: a command of 60–150 characters was cut on screen and still not shown when opened. The opened
+  row now shows the command whenever it is longer than the line has room for, calls logged before this version included.
+
 ## 0.2.1 — 2026-11-03
 
 ### Added

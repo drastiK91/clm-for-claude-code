@@ -1,6 +1,6 @@
 {
   "name": "clm",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "CLM-8B, a local contrastive verifier, inside Claude Code: rank/ask tools for the model, a risk hint under Bash permission prompts, silent-failure checks on Bash output, a live log with bars and latencies, and one-click management of its local services.",
   "author": {
     "name": "Stefano Taccardi",
