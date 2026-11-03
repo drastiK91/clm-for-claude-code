@@ -1,0 +1,10 @@
+# Written by Claude Code each time it loads the mod: this build's API types, per machine.
+.claude-plugin/types/
+.mcpb-cache/
+
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+*~
+*.swp

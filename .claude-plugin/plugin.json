@@ -1,0 +1,14 @@
+{
+  "name": "clm",
+  "version": "0.2.0",
+  "description": "CLM-8B, a local contrastive verifier, inside Claude Code: rank/ask tools for the model, a risk hint under Bash permission prompts, silent-failure checks on Bash output, a live log with bars and latencies, and one-click management of its local services.",
+  "author": {
+    "name": "Stefano Taccardi",
+    "url": "https://github.com/drastiK91"
+  },
+  "homepage": "https://github.com/drastiK91/clm-for-claude-code",
+  "repository": "https://github.com/drastiK91/clm-for-claude-code",
+  "license": "Apache-2.0",
+  "keywords": ["clm", "verifier", "contrastive", "llama.cpp", "local-model", "bash", "safety", "mod"],
+  "types": "./types/index.d.ts"
+}

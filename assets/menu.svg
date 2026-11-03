@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" width="760" height="520" role="img" aria-label="Illustration of the CLM-8B menu: the two services with their ports and processes, the actions numbered 1 to 6, and the guard, check and band switches with their thresholds.">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 13px; fill: #e6edf3; white-space: pre; }
+    .dim { fill: #8b949e; }
+    .faint { fill: #6e7681; }
+    .ok { fill: #3fb950; }
+    .blue { fill: #58a6ff; }
+    .b { font-weight: 700; }
+    .title { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12px; fill: #8b949e; }
+  </style>
+
+  <rect x="0.5" y="0.5" width="759" height="519" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <rect x="16.5" y="16.5" width="727" height="487" rx="8" fill="#0d1117" stroke="#58a6ff" stroke-opacity="0.45"/>
+  <text class="title" x="32" y="38">CLM-8B</text>
+  <text class="title" x="728" y="38" text-anchor="end">esc</text>
+
+  <text x="32" y="68"><tspan class="ok b">● </tspan><tspan class="b">CLM-8B ready</tspan><tspan class="dim">  ·  head server default</tspan></text>
+
+  <text x="32" y="102" class="dim b">SERVICES</text>
+  <text x="32" y="122"><tspan class="ok">● </tspan><tspan class="b">encoder   </tspan><tspan class="dim">:8090  </tspan><tspan class="dim">llama-server · PID 18244</tspan></text>
+  <text x="32" y="141"><tspan class="ok">● </tspan><tspan class="b">clm-serve </tspan><tspan class="dim">:8700  </tspan><tspan class="dim">python · PID 20112</tspan></text>
+
+  <rect x="28" y="161" width="200" height="20" rx="3" fill="#58a6ff" fill-opacity="0.22"/>
+  <text x="32" y="176"><tspan class="dim">1: </tspan><tspan class="blue b">Turn CLM off</tspan></text>
+  <text x="32" y="195"><tspan class="dim">2: </tspan>Restart services (encoder + clm-serve)</text>
+  <text x="32" y="214"><tspan class="dim">3: </tspan>Stop services</text>
+  <text x="32" y="233"><tspan class="dim">4: </tspan>Refresh service status</text>
+  <text x="32" y="252"><tspan class="dim">5: </tspan>Open the log</text>
+  <text x="32" y="271"><tspan class="dim">6: </tspan>Quick test</text>
+
+  <text x="32" y="305" class="dim b">FEATURES</text>
+  <text x="32" y="325"><tspan class="dim">7: </tspan><tspan class="ok">● ON </tspan> Guard <tspan class="dim">· risk hint under Bash permission prompts · ≥ 70.0%</tspan></text>
+  <text x="32" y="344"><tspan class="dim">8: </tspan><tspan class="ok">● ON </tspan> Check <tspan class="dim">· silent failures in Bash output · ≥ 80.0%</tspan></text>
+  <text x="32" y="363"><tspan class="dim">9: </tspan><tspan class="dim">○ OFF</tspan> Band <tspan class="dim">· last answer above the prompt</tspan></text>
+  <text x="32" y="382"><tspan class="dim">h: </tspan>Head <tspan class="blue">server default</tspan><tspan class="dim"> ⇄</tspan></text>
+  <text x="32" y="401"><tspan class="dim">l: </tspan>Language <tspan class="blue">English</tspan><tspan class="dim"> ⇄</tspan></text>
+
+  <text x="32" y="438" class="dim">Close (Esc)</text>
+  <text x="32" y="482" class="faint">↑↓ or 1-9 / h / l · Enter presses · Esc closes</text>
+</svg>

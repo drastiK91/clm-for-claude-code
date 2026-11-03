@@ -1,0 +1,12 @@
+{
+  "name": "clm-for-claude-code",
+  "owner": { "name": "Stefano Taccardi", "url": "https://github.com/drastiK91" },
+  "metadata": { "description": "CLM-8B for Claude Code: a local, millisecond-fast verifier as a mod." },
+  "plugins": [
+    {
+      "name": "clm",
+      "source": "./",
+      "description": "CLM-8B, a local contrastive verifier, inside Claude Code: rank/ask tools, Bash risk hints, silent-failure checks and a live log."
+    }
+  ]
+}
