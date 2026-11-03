@@ -103,8 +103,9 @@ const LIMITS =
   'and the result says when it cut: put what matters there, and the question in question/instructions.'
 
 const RANK_DESCRIPTION = [
-  'Rank candidate options against a context with CLM-8B, a local contrastive verifier',
-  '(tens of milliseconds for short texts, up to a few seconds for many long candidates).',
+  'Rank candidate options against a context with CLM-8B, a local contrastive verifier.',
+  'Its time grows with the text it reads: on a mid-range GPU about 0.2 s for three one-sentence candidates, 0.5 s for eight,',
+  'a few seconds for many long ones.',
   'Use it to pick the best of several candidates you wrote yourself (plans, patches, shell commands, answers, file paths to inspect first),',
   'to shortlist a large set before reading in depth, or as a quick second opinion between close alternatives.',
   'Returns each candidate, by its number in your list, with its probability of being the best match, and the latency.',
@@ -119,7 +120,8 @@ const ASK_DESCRIPTION = [
   'Each question is {type: "noul", instructions} for a yes/no probability,',
   '{type: "choice", instructions, criteria: {option: description}} to pick one option,',
   'or {type: "score", instructions, criteria: [level0, level1, ...]} for an ordered rating.',
-  'Local and fast (tens of milliseconds for short states).',
+  'Local; its time grows with the text it reads: on a mid-range GPU about 0.1 s for a one-line state, 0.5 s for 1500 characters,',
+  '1 s for 5000.',
   LIMITS,
   'Answers are probability distributions, a signal to weigh rather than a verdict.',
 ].join(' ')

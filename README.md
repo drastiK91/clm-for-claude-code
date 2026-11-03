@@ -1,7 +1,7 @@
 <h1 align="center">◆ CLM-8B for Claude Code</h1>
 
 <p align="center">
-  <b>A local, millisecond-fast second opinion for Claude Code.</b><br>
+  <b>A local second opinion for Claude Code, in a fraction of a second.</b><br>
   CLM-8B ranks options, scores risky shell commands and catches silent failures,<br>
   all on your own GPU, all visible in a live log.
 </p>
@@ -21,8 +21,9 @@
 ---
 
 **CLM-8B** ([Contrastive Language Models](https://github.com/Contrastive-LM/CLM)) is a *System One* model: instead of
-generating text, it scores how well each candidate action fits a state, and answers in tens of milliseconds. This mod plugs it
-into Claude Code as a fast, switchable verifier: Claude gets two new tools, your Bash permission prompts get a risk estimate,
+generating text, it scores how well each candidate action fits a state, in one pass: from under a tenth of a second for a
+command to about a second for a long log ([How fast](#how-fast)). This mod plugs it into Claude Code as a switchable
+verifier: Claude gets two new tools, your Bash permission prompts get a risk estimate,
 outputs that look fine but are not get flagged, and every answer lands in a log you can read.
 
 Everything runs locally: the mod talks to `clm-serve` on `127.0.0.1`, which embeds texts with Qwen3-8B through `llama-server`.
@@ -31,6 +32,7 @@ Everything runs locally: the mod talks to `clm-serve` on `127.0.0.1`, which embe
 
 - [Features](#features)
 - [How it works](#how-it-works)
+- [How fast](#how-fast)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Quick start](#quick-start)
@@ -76,6 +78,25 @@ CLM keeps a *state encoder* and an *action encoder* trained contrastively: a que
 a softmax over the scores **is** the answer distribution. States and options are embedded once and cached, so repeated options
 (like the guard's three categories) cost a dot product. See the [CLM repository](https://github.com/Contrastive-LM/CLM) for the
 model, its training data and its benchmarks.
+
+## How fast
+
+Each call runs the text it reads through Qwen3-8B once, so its time grows with that text; HTTP and CLM's heads add a few
+milliseconds. On an RTX 2070 (8 GB), Qwen3-8B Q4_K_M with flash attention and a q8_0 KV cache, on texts the server had not
+seen yet:
+
+| Call | What it reads | Time |
+|---|---|---|
+| Guard | the command, one line | 60–90 ms |
+| Check | the command and up to 1500 characters of output | 140 ms at 300 characters, 300 ms at 800, 500 ms at 1500 |
+| `rank` | 3 one-sentence candidates | about 220 ms |
+| `rank` | 8 one-sentence candidates | about 450 ms |
+| `ask` | a 5000-character state, the most it reads | about 1.1 s |
+
+That is about 60 ms plus 0.8 ms per token, the encoder's prompt speed on that card: a faster GPU cuts it in proportion, a CPU
+multiplies it. A text asked again comes back from `clm-serve`'s cache in about a millisecond. The check runs only on an output
+that holds a failure word, and Claude gets that output once the check has answered (2 s at most, then it gives up). The log's
+p50 and p95 are these times as you get them: mostly checks and rankings, since the guard is the quick one.
 
 ## Requirements
 

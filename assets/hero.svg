@@ -27,7 +27,7 @@
   <text x="24" y="66"><tspan class="dim">&gt; </tspan>fix the flaky test in src/cache.test.ts</text>
   <text x="24" y="98"><tspan class="claude">● </tspan>I'll let CLM rank three candidate fixes before editing.</text>
   <text x="24" y="124"><tspan class="ok">● </tspan><tspan class="b">clm - rank</tspan><tspan class="dim"> (MCP)(context: "flaky cache test…", 3 candidates)</tspan></text>
-  <text x="24" y="143"><tspan class="dim">  ⎿  CLM-8B ranking (41 ms (server 12 ms)), best first:</tspan></text>
+  <text x="24" y="143"><tspan class="dim">  ⎿  CLM-8B ranking (214 ms (server 211 ms)), best first:</tspan></text>
   <text x="24" y="162"><tspan class="dim">     1. </tspan>91.2%  #2  Await the cache write before asserting</text>
   <text x="24" y="181"><tspan class="dim">     2.  6.1%  #1  Raise the test timeout to 10 s</tspan></text>
   <text x="24" y="200"><tspan class="dim">     3.  2.7%  #3  Retry the test three times</tspan></text>
@@ -36,21 +36,21 @@
   <rect x="24.5" y="244.5" width="560" height="104" rx="6" fill="none" stroke="#58a6ff" stroke-opacity="0.55"/>
   <text x="40" y="268" class="b">Bash command</text>
   <text x="40" y="290">  rm -rf build &amp;&amp; npm test</text>
-  <text x="40" y="312" class="dim">  CLM-8B (estimate): risk 9.5% · 38 ms</text>
+  <text x="40" y="312" class="dim">  CLM-8B (estimate): risk 9.5% · 72 ms</text>
   <text x="40" y="336">Do you want to proceed?  <tspan class="blue">❯ 1. Yes</tspan><tspan class="dim">   2. No</tspan></text>
 
   <text x="24" y="380"><tspan class="ok">● </tspan><tspan class="b">Bash</tspan>(npm test)</text>
   <text x="24" y="399"><tspan class="dim">  ⎿  Tests: 3 failed, 12 passed · Done in 2.1s</tspan></text>
 
   <!-- band above the prompt -->
-  <text x="24" y="470"><tspan class="brand">◆ CLM-8B </tspan><tspan class="violet b">CHECK </tspan><tspan class="dim">$ npm test → </tspan>failure <tspan class="bad">███████▋</tspan><tspan class="dim">─</tspan><tspan class="bad b"> 95.0%</tspan><tspan class="warn"> · ⚑ note sent to the model</tspan><tspan class="dim">  41 ms  log</tspan></text>
+  <text x="24" y="470"><tspan class="brand">◆ CLM-8B </tspan><tspan class="violet b">CHECK </tspan><tspan class="dim">$ npm test → </tspan>failure <tspan class="bad">███████▋</tspan><tspan class="dim">─</tspan><tspan class="bad b"> 95.0%</tspan><tspan class="warn"> · ⚑ note sent to the model</tspan><tspan class="dim"> 318 ms  log</tspan></text>
 
   <!-- prompt -->
   <rect x="16.5" y="482.5" width="572" height="40" rx="6" fill="none" stroke="#6e7681"/>
   <text x="32" y="507"><tspan class="dim">&gt; </tspan><tspan class="faint">█</tspan></text>
 
   <!-- footer -->
-  <text x="24" y="548"><tspan class="dim">⏵⏵ accept edits on  </tspan><tspan class="ok b">● </tspan>CLM-8B ready · 41 ms</text>
+  <text x="24" y="548"><tspan class="dim">⏵⏵ accept edits on  </tspan><tspan class="ok b">● </tspan>CLM-8B ready · 318 ms</text>
   <text x="24" y="574" class="faint">  right-click the tag for the menu · /clm log for the history</text>
 
   <!-- docked log pane -->
@@ -61,7 +61,7 @@
 
   <text x="736" y="80"><tspan class="ok">● </tspan><tspan class="b">Ready</tspan></text>
   <text x="736" y="99" class="dim" style="font-size:12px">CLM-8B · clm-latest · 127.0.0.1:8700</text>
-  <text x="736" y="118" style="font-size:12px">3<tspan class="dim"> calls   p50 </tspan>38 ms<tspan class="dim">   p95 </tspan>41 ms<tspan class="warn">   ⚑ 1 flagged</tspan><tspan class="blue">   ▅▁█</tspan></text>
+  <text x="736" y="118" style="font-size:12px">3<tspan class="dim"> calls   p50 </tspan>214 ms<tspan class="dim">   p95 </tspan>318 ms<tspan class="warn">   ⚑ 1 flagged</tspan><tspan class="blue">   ▅▁█</tspan></text>
   <rect x="735.5" y="132.5" width="58" height="20" rx="4" fill="#1f6feb" fill-opacity="0.25" stroke="#58a6ff"/>
   <text x="743" y="147" class="blue">All 3</text>
   <rect x="799.5" y="132.5" width="66" height="20" rx="4" fill="none" stroke="#30363d"/>
@@ -73,18 +73,18 @@
   <text x="1160" y="147" class="dim" text-anchor="end">Clear</text>
 
   <text x="736" y="182"><tspan class="dim">▸ 14:02:31 </tspan><tspan class="violet b">CHECK</tspan> $ npm test</text>
-  <text x="1160" y="182" class="dim" text-anchor="end">41 ms</text>
+  <text x="1160" y="182" class="dim" text-anchor="end">318 ms</text>
   <text x="736" y="201"><tspan class="dim">           failure </tspan><tspan class="bad">█████████▌</tspan><tspan class="bad b">  95.0%</tspan> · failure<tspan class="warn"> ⚑</tspan></text>
 
   <text x="736" y="231"><tspan class="dim">▾ 14:02:11 </tspan><tspan class="warn b">GUARD</tspan> $ rm -rf build &amp;&amp; npm test</text>
-  <text x="1160" y="231" class="dim" text-anchor="end">38 ms</text>
+  <text x="1160" y="231" class="dim" text-anchor="end">72 ms</text>
   <text x="736" y="250"><tspan class="dim">           risk </tspan><tspan class="ok">█</tspan><tspan class="faint">─────────</tspan><tspan class="ok b">   9.5%</tspan> · safe</text>
   <text x="736" y="272"><tspan class="b">           safe         </tspan><tspan class="blue">████████████████▎</tspan><tspan class="faint">─</tspan><tspan class="b">  90.5%</tspan></text>
   <text x="736" y="291"><tspan class="dim">           destructive  </tspan><tspan class="faint">█▏────────────────</tspan><tspan class="dim">   6.0%</tspan></text>
   <text x="736" y="310"><tspan class="dim">           exfiltration </tspan><tspan class="faint">▋─────────────────</tspan><tspan class="dim">   3.5%</tspan></text>
-  <text x="736" y="329" class="dim">           server 12 ms · 20 tok</text>
+  <text x="736" y="329" class="dim">           server 70 ms · 20 tok</text>
 
   <text x="736" y="359"><tspan class="dim">▸ 14:01:58 </tspan><tspan class="blue b">TOOL </tspan> flaky cache test — which fix…</text>
-  <text x="1160" y="359" class="dim" text-anchor="end">41 ms</text>
+  <text x="1160" y="359" class="dim" text-anchor="end">214 ms</text>
   <text x="736" y="378"><tspan class="dim">           #2 </tspan><tspan class="blue">█████████▏</tspan><tspan class="blue b">  91.2%</tspan> · «Await the cache write…»</text>
 </svg>

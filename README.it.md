@@ -1,7 +1,7 @@
 <h1 align="center">◆ CLM-8B per Claude Code</h1>
 
 <p align="center">
-  <b>Un secondo parere locale, in millisecondi, dentro Claude Code.</b><br>
+  <b>Un secondo parere locale, in una frazione di secondo, dentro Claude Code.</b><br>
   CLM-8B classifica opzioni, stima il rischio dei comandi shell e scova i fallimenti silenziosi,<br>
   tutto sulla tua GPU, tutto visibile in un registro dal vivo.
 </p>
@@ -20,8 +20,9 @@
 ---
 
 **CLM-8B** ([Contrastive Language Models](https://github.com/Contrastive-LM/CLM)) è un modello *System One*: invece di generare
-testo, valuta quanto ogni azione candidata si adatta a uno stato, e risponde in decine di millisecondi. Questa mod lo porta in
-Claude Code come verificatore veloce e attivabile a piacere: Claude ottiene due nuovi tool, i permessi Bash ottengono una stima del
+testo, valuta quanto ogni azione candidata si adatta a uno stato, in un solo passaggio: da meno di un decimo di secondo per un
+comando a circa un secondo per un log lungo ([Quanto è veloce](#quanto-è-veloce)). Questa mod lo porta in Claude Code come
+verificatore attivabile a piacere: Claude ottiene due nuovi tool, i permessi Bash ottengono una stima del
 rischio, gli output che sembrano a posto ma non lo sono vengono segnalati, e ogni risposta finisce in un registro leggibile.
 
 Tutto gira in locale: la mod parla con `clm-serve` su `127.0.0.1`, che calcola gli embedding con Qwen3-8B tramite `llama-server`.
@@ -61,6 +62,26 @@ CLM ha un *encoder degli stati* e un *encoder delle azioni* addestrati in modo c
 chiuso di opzioni, e una softmax sui punteggi **è** la distribuzione della risposta. Stati e opzioni vengono codificati una volta
 sola e messi in cache, quindi le opzioni ripetute (come le tre categorie del guard) costano un prodotto scalare. Modello, dati e
 benchmark sono nel [repository di CLM](https://github.com/Contrastive-LM/CLM).
+
+## Quanto è veloce
+
+Ogni chiamata fa passare il testo che legge una volta in Qwen3-8B, quindi il suo tempo cresce con quel testo; HTTP e le head di
+CLM aggiungono pochi millisecondi. Su una RTX 2070 (8 GB), Qwen3-8B Q4_K_M con flash attention e cache KV q8_0, su testi che il
+server non aveva ancora visto:
+
+| Chiamata | Cosa legge | Tempo |
+|---|---|---|
+| Guard | il comando, una riga | 60–90 ms |
+| Check | il comando e fino a 1500 caratteri di output | 140 ms a 300 caratteri, 300 ms a 800, 500 ms a 1500 |
+| `rank` | 3 candidati di una frase | circa 220 ms |
+| `rank` | 8 candidati di una frase | circa 450 ms |
+| `ask` | uno stato di 5000 caratteri, il massimo che legge | circa 1,1 s |
+
+Sono circa 60 ms più 0,8 ms per token, la velocità di lettura dell'encoder su quella scheda: una GPU più veloce li riduce in
+proporzione, una CPU li moltiplica. Un testo chiesto di nuovo torna dalla cache di `clm-serve` in circa un millisecondo. Il check
+parte solo su un output che contiene una parola di errore, e Claude riceve quell'output quando il check ha risposto (al massimo
+2 s, poi rinuncia). p50 e p95 nel registro sono questi tempi come li ottieni tu: soprattutto check e classifiche, perché il guard
+è quello rapido.
 
 ## Requisiti
 

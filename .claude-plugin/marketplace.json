@@ -1,7 +1,7 @@
 {
   "name": "clm-for-claude-code",
   "owner": { "name": "Stefano Taccardi", "url": "https://github.com/drastiK91" },
-  "metadata": { "description": "CLM-8B for Claude Code: a local, millisecond-fast verifier as a mod." },
+  "metadata": { "description": "CLM-8B for Claude Code: a local verifier on your own GPU, as a mod." },
   "plugins": [
     {
       "name": "clm",

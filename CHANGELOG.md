@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.3 — 2026-11-03
+
+### Fixed
+
+- **Honest latencies.** The tools' descriptions, the READMEs and the hero said "tens of milliseconds": that holds for the guard
+  (60–90 ms on an RTX 2070) and nothing else. A call's time grows with the text it reads, at about 60 ms plus 0.8 ms per token
+  on that card: 220 ms to rank three one-sentence candidates, 500 ms for a check on 1500 characters of output, 1.1 s for a
+  5000-character state. The descriptions now give those numbers, and the READMEs have a *How fast* table.
+
 ## 0.2.2 — 2026-11-03
 
 ### Fixed
